@@ -56,13 +56,13 @@ async def handle_video(event):
             # Process video with photo as thumbnail
             (
                 ffmpeg
+                .concat(video_input, photo_input, v=1, a=1)  # Combine inputs (not really concatenating, just for mapping)
                 .output(
-                    video_input,  # Video input file
                     OUTPUT_VIDEO_PATH,
                     vcodec='libx264',    # Re-encode video
                     acodec='aac',        # Re-encode audio
-                    map=['0:v:0', '0:a:0', '1:v:0'],  # Map streams: video, audio, photo
-                    **{'c:v:1': 'mjpeg'},             # Photo encoded as MJPEG
+                    map=['0:v', '0:a', '1:v'],  # Map video, audio, and photo
+                    **{'c:v:1': 'mjpeg'},       # Photo as MJPEG
                     **{'disposition:v:1': 'attached_pic'},  # Photo as thumbnail
                     map_metadata='-1'   # Remove metadata
                 )
