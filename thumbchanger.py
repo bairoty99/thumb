@@ -49,22 +49,24 @@ async def handle_video(event):
         await event.reply("Video downloaded, processing thumbnail...")
 
         try:
-            # Input video stream
+            # Input streams
             video_input = ffmpeg.input(TEMP_VIDEO_PATH)
-            # Input photo stream (for thumbnail)
             photo_input = ffmpeg.input(PHOTO_PATH)
 
-            # Map video and audio from the video input, attach photo as thumbnail
+            # Combine video, audio, and photo as thumbnail
             stream = ffmpeg.output(
-                video_input['v'],  # Video stream
-                video_input['a'],  # Audio stream
+                video_input['v'],  # Video stream from video file
+                video_input['a'],  # Audio stream from video file
                 OUTPUT_VIDEO_PATH,
-                c:v='libx264',     # Re-encode video
-                c:a='aac',        # Re-encode audio
-                map=0,            # Map video and audio from first input (video)
-                map_metadata='-1', # Remove metadata
-                **{'c:v:1': 'mjpeg', 'disposition:v:1': 'attached_pic'}  # Photo as thumbnail
-            ).input(photo_input, map='1:v')  # Add photo as second input
+                vcodec='libx264',  # Re-encode video with H.264
+                acodec='aac',      # Re-encode audio with AAC
+                map='0:v',         # Map video from first input
+                map='0:a',         # Map audio from first input
+                map='1:v',         # Map photo from second input as additional video stream
+                **{'c:v:1': 'mjpeg'},  # Encode photo as MJPEG
+                **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
+                map_metadata='-1'  # Remove metadata
+            )
 
             ffmpeg.run(stream, overwrite_output=True)
 
