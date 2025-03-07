@@ -49,16 +49,23 @@ async def handle_video(event):
         await event.reply("Video downloaded, processing thumbnail...")
 
         try:
-            # Use ffmpeg to re-encode video and set thumbnail
-            stream = ffmpeg.input(TEMP_VIDEO_PATH)
+            # Input video stream
+            video_input = ffmpeg.input(TEMP_VIDEO_PATH)
+            # Input photo stream (for thumbnail)
+            photo_input = ffmpeg.input(PHOTO_PATH)
+
+            # Map video and audio from the video input, attach photo as thumbnail
             stream = ffmpeg.output(
-                stream,
+                video_input['v'],  # Video stream
+                video_input['a'],  # Audio stream
                 OUTPUT_VIDEO_PATH,
-                **{'c:v': 'libx264'},  # Re-encode video with H.264
-                **{'c:a': 'aac'},     # Re-encode audio with AAC
-                map_metadata='-1',    # Remove existing metadata
-                **{'disposition:v:0': 'attached_pic', 'i': PHOTO_PATH}  # Attach photo as thumbnail
-            )
+                c:v='libx264',     # Re-encode video
+                c:a='aac',        # Re-encode audio
+                map=0,            # Map video and audio from first input (video)
+                map_metadata='-1', # Remove metadata
+                **{'c:v:1': 'mjpeg', 'disposition:v:1': 'attached_pic'}  # Photo as thumbnail
+            ).input(photo_input, map='1:v')  # Add photo as second input
+
             ffmpeg.run(stream, overwrite_output=True)
 
             await event.reply("Starting video upload with new thumbnail...")
