@@ -26,7 +26,6 @@ async def progress_callback(current, total, event, action):
 async def handle_photo(event):
     if event.photo:
         await event.reply("Starting photo download...")
-        # Download with progress updates
         await event.download_media(
             file=PHOTO_PATH,
             progress_callback=lambda c, t: progress_callback(c, t, event, "Photo download")
@@ -42,7 +41,6 @@ async def handle_video(event):
             await event.reply("Please send a photo first to use as the thumbnail!")
             return
 
-        # Download video with progress
         await event.reply("Starting video download...")
         await event.download_media(
             file=TEMP_VIDEO_PATH,
@@ -51,19 +49,18 @@ async def handle_video(event):
         await event.reply("Video downloaded, processing thumbnail...")
 
         try:
-            # Use ffmpeg to set the thumbnail
+            # Use ffmpeg to re-encode video and set thumbnail
             stream = ffmpeg.input(TEMP_VIDEO_PATH)
             stream = ffmpeg.output(
                 stream,
                 OUTPUT_VIDEO_PATH,
-                vcodec='copy',
-                acodec='copy',
-                map_metadata='-1',
-                vf=f"thumbnail={PHOTO_PATH}"
+                **{'c:v': 'libx264'},  # Re-encode video with H.264
+                **{'c:a': 'aac'},     # Re-encode audio with AAC
+                map_metadata='-1',    # Remove existing metadata
+                **{'disposition:v:0': 'attached_pic', 'i': PHOTO_PATH}  # Attach photo as thumbnail
             )
             ffmpeg.run(stream, overwrite_output=True)
 
-            # Upload the modified video with progress
             await event.reply("Starting video upload with new thumbnail...")
             await client.send_file(
                 event.chat_id,
