@@ -49,25 +49,27 @@ async def handle_video(event):
         await event.reply("Video downloaded, processing thumbnail...")
 
         try:
-            # Input streams
+            # Define inputs
             video_input = ffmpeg.input(TEMP_VIDEO_PATH)
             photo_input = ffmpeg.input(PHOTO_PATH)
 
-            # Combine video, audio, and photo as thumbnail
-            stream = ffmpeg.output(
-                video_input,  # First input (video)
-                OUTPUT_VIDEO_PATH,
-                vcodec='libx264',  # Re-encode video
-                acodec='aac',      # Re-encode audio
-                map='0:v:0',       # Map video stream from video input
-                map='0:a:0',       # Map audio stream from video input
-                map='1:v:0',       # Map photo as additional video stream
-                **{'c:v:1': 'mjpeg'},  # Encode photo as MJPEG
-                **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
-                map_metadata='-1'  # Remove metadata
+            # Use ffmpeg to process video with photo as thumbnail
+            (
+                ffmpeg
+                .output(
+                    video_input['v:0'],  # Video stream from video input
+                    video_input['a:0'],  # Audio stream from video input
+                    OUTPUT_VIDEO_PATH,
+                    vcodec='libx264',    # Re-encode video
+                    acodec='aac',        # Re-encode audio
+                    map=['0:v:0', '0:a:0', '1:v:0'],  # Map all streams in a list
+                    **{'c:v:1': 'mjpeg'},             # Second video stream (photo) as MJPEG
+                    **{'disposition:v:1': 'attached_pic'},  # Photo as thumbnail
+                    map_metadata='-1'   # Remove metadata
+                )
+                .overwrite_output()
+                .run()
             )
-
-            ffmpeg.run(stream, overwrite_output=True)
 
             await event.reply("Starting video upload with new thumbnail...")
             await client.send_file(
