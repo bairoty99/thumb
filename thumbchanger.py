@@ -60,7 +60,7 @@ async def handle_video(event):
                     video_input['v'],   # Video stream from video file
                     video_input['a'],   # Audio stream from video file
                     photo_input['v'],   # Video stream from photo (thumbnail)
-                    OUTPUT_VIDEO_PATH,  # Output filename
+                    OUTPUT_VIDEO_PATH,  # Output filename must come right after streams
                     vcodec='libx264',   # Re-encode video
                     acodec='aac',       # Re-encode audio
                     map=['0:v', '0:a', '1:v'],  # Map all streams
