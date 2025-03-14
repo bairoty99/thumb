@@ -57,16 +57,14 @@ async def handle_video(event):
             (
                 ffmpeg
                 .output(
-                    video_input['v'],  # Video stream from video file
-                    video_input['a'],  # Audio stream from video file
-                    photo_input['v'],  # Video stream from photo (thumbnail)
-                    OUTPUT_VIDEO_PATH,
-                    vcodec='libx264',              # Re-encode video
-                    acodec='aac',                  # Re-encode audio
-                    **{'map': ['0:v', '0:a', '1:v']},  # Map all streams in a list
-                    **{'c:v:1': 'mjpeg'},          # Encode photo as MJPEG
+                    [video_input['v'], video_input['a'], photo_input['v']],  # Streams as a list
+                    OUTPUT_VIDEO_PATH,  # Output filename
+                    vcodec='libx264',   # Re-encode video
+                    acodec='aac',       # Re-encode audio
+                    map=['0:v', '0:a', '1:v'],  # Map all streams
+                    **{'c:v:1': 'mjpeg'},       # Encode photo as MJPEG
                     **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
-                    shortest=True                  # Use shortest duration (video length)
+                    shortest=True               # Use shortest duration
                 )
                 .overwrite_output()
                 .run()
@@ -87,8 +85,10 @@ async def handle_video(event):
             os.remove(OUTPUT_VIDEO_PATH)
 
         except ffmpeg.Error as e:
-            await event.reply(f"FFmpeg error: {e.stderr.decode()}")
-            print(f"FFmpeg error: {e.stderr.decode()}")
+            # Safely handle stderr being None
+            error_msg = e.stderr.decode('utf-8') if e.stderr else "Unknown FFmpeg error"
+            await event.reply(f"FFmpeg error: {error_msg}")
+            print(f"FFmpeg error: {error_msg}")
         except Exception as e:
             await event.reply(f"Error processing video: {str(e)}")
             print(f"Error: {e}")
