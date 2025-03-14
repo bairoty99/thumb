@@ -57,7 +57,9 @@ async def handle_video(event):
             (
                 ffmpeg
                 .output(
-                    [video_input['v'], video_input['a'], photo_input['v']],  # Streams as a list
+                    video_input['v'],   # Video stream from video file
+                    video_input['a'],   # Audio stream from video file
+                    photo_input['v'],   # Video stream from photo (thumbnail)
                     OUTPUT_VIDEO_PATH,  # Output filename
                     vcodec='libx264',   # Re-encode video
                     acodec='aac',       # Re-encode audio
