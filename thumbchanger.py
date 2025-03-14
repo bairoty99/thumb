@@ -63,12 +63,10 @@ async def handle_video(event):
                     OUTPUT_VIDEO_PATH,
                     vcodec='libx264',              # Re-encode video
                     acodec='aac',                  # Re-encode audio
-                    map='0:v',                     # Map video from input 0
-                    map='0:a',                     # Map audio from input 0
-                    map='1:v',                     # Map photo from input 1
-                    **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
+                    **{'map': ['0:v', '0:a', '1:v']},  # Map all streams in a list
                     **{'c:v:1': 'mjpeg'},          # Encode photo as MJPEG
-                    short=True                     # Use shortest duration (video length)
+                    **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
+                    shortest=True                  # Use shortest duration (video length)
                 )
                 .overwrite_output()
                 .run()
