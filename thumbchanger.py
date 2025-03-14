@@ -8,7 +8,7 @@ api_hash = '4aef3ed4219eb63675a572d2c9e27e2a'
 bot_token = '7206339621:AAH9cl6GdrZJjeUNSMUJsSJ6-1E3SmX6Fas'
 
 # Initialize the bot
-client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
+client = TelegramClient('bot', api_id, api_hash)
 
 # File paths
 PHOTO_PATH = 'stored_photo.jpg'
@@ -50,21 +50,25 @@ async def handle_video(event):
 
         try:
             # Define inputs
-            video_input = ffmpeg.input(TEMP_VIDEO_PATH)
-            photo_input = ffmpeg.input(PHOTO_PATH)
+            video_input = ffmpeg.input(TEMP_VIDEO_PATH)  # Video with audio
+            photo_input = ffmpeg.input(PHOTO_PATH)       # Photo for thumbnail
 
             # Process video with photo as thumbnail
             (
                 ffmpeg
-                .concat(video_input, photo_input, v=1, a=1)  # Combine inputs (not really concatenating, just for mapping)
                 .output(
+                    video_input['v'],  # Video stream from video file
+                    video_input['a'],  # Audio stream from video file
+                    photo_input['v'],  # Video stream from photo (thumbnail)
                     OUTPUT_VIDEO_PATH,
-                    vcodec='libx264',    # Re-encode video
-                    acodec='aac',        # Re-encode audio
-                    map=['0:v', '0:a', '1:v'],  # Map video, audio, and photo
-                    **{'c:v:1': 'mjpeg'},       # Photo as MJPEG
-                    **{'disposition:v:1': 'attached_pic'},  # Photo as thumbnail
-                    map_metadata='-1'   # Remove metadata
+                    vcodec='libx264',              # Re-encode video
+                    acodec='aac',                  # Re-encode audio
+                    map='0:v',                     # Map video from input 0
+                    map='0:a',                     # Map audio from input 0
+                    map='1:v',                     # Map photo from input 1
+                    **{'disposition:v:1': 'attached_pic'},  # Set photo as thumbnail
+                    **{'c:v:1': 'mjpeg'},          # Encode photo as MJPEG
+                    short=True                     # Use shortest duration (video length)
                 )
                 .overwrite_output()
                 .run()
@@ -84,13 +88,16 @@ async def handle_video(event):
             os.remove(TEMP_VIDEO_PATH)
             os.remove(OUTPUT_VIDEO_PATH)
 
+        except ffmpeg.Error as e:
+            await event.reply(f"FFmpeg error: {e.stderr.decode()}")
+            print(f"FFmpeg error: {e.stderr.decode()}")
         except Exception as e:
             await event.reply(f"Error processing video: {str(e)}")
             print(f"Error: {e}")
 
 # Start the bot
 async def main():
-    await client.start()
+    await client.start(bot_token=bot_token)
     print("Bot is running...")
     await client.run_until_disconnected()
 
